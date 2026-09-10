@@ -16,6 +16,8 @@ import {
   saveRecommendationFeedback,
 } from "../services/api";
 
+import { auth } from "../config/firebase";
+
 import Navigation from "../components/Navigation";
 import LoadingScreen from "../components/LoadingScreen";
 
@@ -66,8 +68,10 @@ function Dashboard() {
 
   const [savedJobs, setSavedJobs] = useState([]);
   const [applications, setApplications] = useState([]);
+
   const [savedRecommendationIds, setSavedRecommendationIds] =
     useState(new Set());
+
   const [trackedRecommendationIds, setTrackedRecommendationIds] =
     useState(new Set());
 
@@ -98,7 +102,26 @@ function Dashboard() {
   const [error, setError] =
     useState("");
 
-  const recommendationsRequestLock = useRef(false);
+  const recommendationsRequestLock =
+    useRef(false);
+
+  /*
+   * ============================
+   * USER-SPECIFIC CACHE KEY
+   * ============================
+   *
+   * Every Firebase account gets
+   * its own recommendation cache.
+   */
+  const getRecommendationStorageKey = () => {
+    const user = auth.currentUser;
+
+    if (!user?.uid) {
+      return null;
+    }
+
+    return `${RECOMMENDATIONS_STORAGE_KEY}_${user.uid}`;
+  };
 
   // ==================== LOAD DASHBOARD ====================
 
@@ -170,62 +193,109 @@ function Dashboard() {
     loadDashboard();
   }, []);
 
-  // ==================== LOAD CACHED RECOMMENDATIONS ====================
+  // ==================== LOAD USER-SPECIFIC CACHED RECOMMENDATIONS ====================
 
   useEffect(() => {
-    try {
-      const storedRecommendations =
-        localStorage.getItem(
-          RECOMMENDATIONS_STORAGE_KEY
-        );
-
-      if (!storedRecommendations) {
-        return;
-      }
-
-      const parsed = JSON.parse(
-        storedRecommendations
-      );
-
-      if (
-        !Array.isArray(
-          parsed.recommendations
-        )
-      ) {
-        localStorage.removeItem(
-          RECOMMENDATIONS_STORAGE_KEY
-        );
-
-        return;
-      }
-
-      const isExpired =
-        Date.now() - parsed.savedAt >
-        RECOMMENDATIONS_CACHE_DURATION;
-
-      if (isExpired) {
-        localStorage.removeItem(
-          RECOMMENDATIONS_STORAGE_KEY
-        );
-
-        return;
-      }
-
-      setRecommendedJobs(
-        parsed.recommendations
-      );
-
-      setHasLoadedRecommendations(true);
-    } catch (error) {
-      console.error(
-        "Failed to load cached recommendations:",
-        error
-      );
-
+    const loadCachedRecommendations = () => {
+      /*
+       * Remove the OLD shared cache.
+       *
+       * This is important because your browser may
+       * still have recommendations saved under:
+       *
+       * careerly_recommended_jobs
+       *
+       * That old cache could belong to another account.
+       */
       localStorage.removeItem(
         RECOMMENDATIONS_STORAGE_KEY
       );
-    }
+
+      const storageKey =
+        getRecommendationStorageKey();
+
+      if (!storageKey) {
+        setRecommendedJobs([]);
+        setHasLoadedRecommendations(false);
+        return;
+      }
+
+      try {
+        const storedRecommendations =
+          localStorage.getItem(storageKey);
+
+        if (!storedRecommendations) {
+          setRecommendedJobs([]);
+          setHasLoadedRecommendations(false);
+          return;
+        }
+
+        const parsed = JSON.parse(
+          storedRecommendations
+        );
+
+        if (
+          !Array.isArray(
+            parsed.recommendations
+          )
+        ) {
+          localStorage.removeItem(storageKey);
+
+          setRecommendedJobs([]);
+          setHasLoadedRecommendations(false);
+
+          return;
+        }
+
+        const isExpired =
+          Date.now() - parsed.savedAt >
+          RECOMMENDATIONS_CACHE_DURATION;
+
+        if (isExpired) {
+          localStorage.removeItem(storageKey);
+
+          setRecommendedJobs([]);
+          setHasLoadedRecommendations(false);
+
+          return;
+        }
+
+        setRecommendedJobs(
+          parsed.recommendations
+        );
+
+        setHasLoadedRecommendations(true);
+      } catch (error) {
+        console.error(
+          "Failed to load cached recommendations:",
+          error
+        );
+
+        localStorage.removeItem(storageKey);
+
+        setRecommendedJobs([]);
+        setHasLoadedRecommendations(false);
+      }
+    };
+
+    /*
+     * Firebase may restore the logged-in user
+     * asynchronously when the page loads.
+     *
+     * Wait for Firebase to tell us who the user is.
+     */
+    const unsubscribe =
+      auth.onAuthStateChanged((user) => {
+        if (!user) {
+          setRecommendedJobs([]);
+          setHasLoadedRecommendations(false);
+          return;
+        }
+
+        loadCachedRecommendations();
+      });
+
+    return () => unsubscribe();
   }, []);
 
   // ==================== GET AI RECOMMENDATIONS ====================
@@ -258,13 +328,22 @@ function Dashboard() {
 
         setHasLoadedRecommendations(true);
 
-        localStorage.setItem(
-          RECOMMENDATIONS_STORAGE_KEY,
-          JSON.stringify({
-            recommendations,
-            savedAt: Date.now(),
-          })
-        );
+        /*
+         * Save recommendations under the
+         * CURRENT Firebase user's UID.
+         */
+        const storageKey =
+          getRecommendationStorageKey();
+
+        if (storageKey) {
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              recommendations,
+              savedAt: Date.now(),
+            })
+          );
+        }
       } catch (error) {
         console.error(
           "Failed to load recommended jobs:",
@@ -280,7 +359,9 @@ function Dashboard() {
           recommendedJobs.length > 0
         );
       } finally {
-        recommendationsRequestLock.current = false;
+        recommendationsRequestLock.current =
+          false;
+
         setRecommendationsLoading(false);
       }
     };
@@ -309,206 +390,359 @@ function Dashboard() {
     );
   };
 
-  const handleSaveRecommendedJob = async (
-    recommendation
-  ) => {
-    const job = recommendation?.job;
+  // ==================== SAVE / UNSAVE RECOMMENDED JOB ====================
 
-    if (!job?.source || !job?.externalId) {
-      return;
-    }
+  const handleSaveRecommendedJob =
+    async (recommendation) => {
+      const job = recommendation?.job;
 
-    const jobKey = `${job.source}-${job.externalId}`;
+      if (
+        !job?.source ||
+        !job?.externalId
+      ) {
+        return;
+      }
 
-    try {
-      if (savedRecommendationIds.has(jobKey)) {
-        const savedJob = savedJobs.find(
-          (saved) =>
-            saved.source === job.source &&
-            String(saved.externalId) ===
-              String(job.externalId)
-        );
+      const jobKey =
+        `${job.source}-${job.externalId}`;
 
-        if (!savedJob?._id) {
+      try {
+        if (
+          savedRecommendationIds.has(
+            jobKey
+          )
+        ) {
+          const savedJob =
+            savedJobs.find(
+              (saved) =>
+                saved.source ===
+                  job.source &&
+                String(
+                  saved.externalId
+                ) ===
+                  String(
+                    job.externalId
+                  )
+            );
+
+          if (!savedJob?._id) {
+            return;
+          }
+
+          await deleteSavedJob(
+            savedJob._id
+          );
+
+          setSavedJobs((current) =>
+            current.filter(
+              (saved) =>
+                saved._id !==
+                savedJob._id
+            )
+          );
+
+          setSavedRecommendationIds(
+            (current) => {
+              const next =
+                new Set(current);
+
+              next.delete(jobKey);
+
+              return next;
+            }
+          );
+
           return;
         }
 
-        await deleteSavedJob(savedJob._id);
+        const response =
+          await saveJob({
+            externalId:
+              job.externalId,
+            source:
+              job.source,
+            title:
+              job.title,
+            company:
+              job.company,
+            location:
+              job.location,
+            description:
+              job.description,
+            jobType:
+              job.jobType,
+            workMode:
+              job.workMode,
+            experienceLevel:
+              job.experienceLevel,
+            skills:
+              job.skills,
+            salary:
+              job.salary,
+            applicationUrl:
+              job.applicationUrl,
+            postedAt:
+              job.postedAt,
+          });
 
-        setSavedJobs((current) =>
-          current.filter(
-            (saved) => saved._id !== savedJob._id
-          )
+        if (response?.savedJob) {
+          setSavedJobs((current) => [
+            ...current,
+            response.savedJob,
+          ]);
+        }
+
+        setSavedRecommendationIds(
+          (current) => {
+            const next =
+              new Set(current);
+
+            next.add(jobKey);
+
+            return next;
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Failed to save/unsave recommended job:",
+          error
+        );
+      }
+    };
+
+  // ==================== TRACK / UNTRACK RECOMMENDED JOB ====================
+
+  const handleTrackRecommendedJob =
+    async (recommendation) => {
+      const job = recommendation?.job;
+
+      if (
+        !job?.source ||
+        !job?.externalId
+      ) {
+        return;
+      }
+
+      const jobKey =
+        `${job.source}-${job.externalId}`;
+
+      try {
+        setTrackingRecommendationId(
+          jobKey
         );
 
-        setSavedRecommendationIds((current) => {
-          const next = new Set(current);
-          next.delete(jobKey);
-          return next;
+        if (
+          trackedRecommendationIds.has(
+            jobKey
+          )
+        ) {
+          const application =
+            applications.find(
+              (item) =>
+                item.source ===
+                  job.source &&
+                String(
+                  item.externalId
+                ) ===
+                  String(
+                    job.externalId
+                  )
+            );
+
+          if (!application?._id) {
+            return;
+          }
+
+          await deleteApplication(
+            application._id
+          );
+
+          setApplications((current) =>
+            current.filter(
+              (item) =>
+                item._id !==
+                application._id
+            )
+          );
+
+          setTrackedRecommendationIds(
+            (current) => {
+              const next =
+                new Set(current);
+
+              next.delete(jobKey);
+
+              return next;
+            }
+          );
+
+          return;
+        }
+
+        const data =
+          await createApplication({
+            externalId:
+              job.externalId,
+            source:
+              job.source,
+            jobTitle:
+              job.title,
+            company:
+              job.company,
+            location:
+              job.location,
+            applicationUrl:
+              job.applicationUrl,
+          });
+
+        if (data.application) {
+          setApplications(
+            (current) => [
+              ...current,
+              data.application,
+            ]
+          );
+        }
+
+        setTrackedRecommendationIds(
+          (current) => {
+            const next =
+              new Set(current);
+
+            next.add(jobKey);
+
+            return next;
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Failed to track/untrack recommended job:",
+          error
+        );
+
+        if (
+          error.response?.status ===
+          409
+        ) {
+          setTrackedRecommendationIds(
+            (current) => {
+              const next =
+                new Set(current);
+
+              next.add(jobKey);
+
+              return next;
+            }
+          );
+        }
+      } finally {
+        setTrackingRecommendationId(
+          null
+        );
+      }
+    };
+
+  // ==================== NOT INTERESTED ====================
+
+  const handleNotInterested =
+    async (recommendation) => {
+      const job = recommendation?.job;
+
+      if (
+        !job?.source ||
+        !job?.externalId
+      ) {
+        return;
+      }
+
+      try {
+        await saveRecommendationFeedback({
+          source:
+            job.source,
+          externalId:
+            job.externalId,
+          jobTitle:
+            job.title,
+          company:
+            job.company,
         });
 
-        return;
-      }
-
-      const response = await saveJob({
-        externalId: job.externalId,
-        source: job.source,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        description: job.description,
-        jobType: job.jobType,
-        workMode: job.workMode,
-        experienceLevel: job.experienceLevel,
-        skills: job.skills,
-        salary: job.salary,
-        applicationUrl: job.applicationUrl,
-        postedAt: job.postedAt,
-      });
-
-      if (response?.savedJob) {
-        setSavedJobs((current) => [
-          ...current,
-          response.savedJob,
-        ]);
-      }
-
-      setSavedRecommendationIds((current) => {
-        const next = new Set(current);
-        next.add(jobKey);
-        return next;
-      });
-    } catch (error) {
-      console.error(
-        "Failed to save/unsave recommended job:",
-        error
-      );
-    }
-  };
-
-  const handleTrackRecommendedJob = async (
-    recommendation
-  ) => {
-    const job = recommendation?.job;
-
-    if (!job?.source || !job?.externalId) {
-      return;
-    }
-
-    const jobKey = `${job.source}-${job.externalId}`;
-
-    try {
-      setTrackingRecommendationId(jobKey);
-
-      if (trackedRecommendationIds.has(jobKey)) {
-        const application = applications.find(
-          (item) =>
-            item.source === job.source &&
-            String(item.externalId) ===
-              String(job.externalId)
-        );
-
-        if (!application?._id) {
-          return;
-        }
-
-        await deleteApplication(application._id);
-
-        setApplications((current) =>
-          current.filter(
-            (item) =>
-              item._id !== application._id
-          )
-        );
-
-        setTrackedRecommendationIds(
-          (current) => {
-            const next = new Set(current);
-            next.delete(jobKey);
-            return next;
-          }
-        );
-
-        return;
-      }
-
-      const data = await createApplication({
-        externalId: job.externalId,
-        source: job.source,
-        jobTitle: job.title,
-        company: job.company,
-        location: job.location,
-        applicationUrl: job.applicationUrl,
-      });
-
-      if (data.application) {
-        setApplications((current) => [
-          ...current,
-          data.application,
-        ]);
-      }
-
-      setTrackedRecommendationIds(
-        (current) => {
-          const next = new Set(current);
-          next.add(jobKey);
-          return next;
-        }
-      );
-    } catch (error) {
-      console.error(
-        "Failed to track/untrack recommended job:",
-        error
-      );
-
-      if (error.response?.status === 409) {
-        setTrackedRecommendationIds(
-          (current) => {
-            const next = new Set(current);
-            next.add(jobKey);
-            return next;
-          }
-        );
-      }
-    } finally {
-      setTrackingRecommendationId(null);
-    }
-  };
-
-  const handleNotInterested = async (
-    recommendation
-  ) => {
-    const job = recommendation?.job;
-
-    if (!job?.source || !job?.externalId) {
-      return;
-    }
-
-    try {
-      await saveRecommendationFeedback({
-        source: job.source,
-        externalId: job.externalId,
-        jobTitle: job.title,
-        company: job.company,
-      });
-
-      setRecommendedJobs((current) =>
-        current.filter(
-          (item) =>
-            !(
-              item?.job?.source === job.source &&
-              String(item?.job?.externalId) ===
-                String(job.externalId)
+        setRecommendedJobs(
+          (current) =>
+            current.filter(
+              (item) =>
+                !(
+                  item?.job?.source ===
+                    job.source &&
+                  String(
+                    item?.job?.externalId
+                  ) ===
+                    String(
+                      job.externalId
+                    )
+                )
             )
-        )
-      );
-    } catch (error) {
-      console.error(
-        "Failed to save recommendation feedback:",
-        error
-      );
-    }
-  };
+        );
+
+        /*
+         * Also update the current user's
+         * cached recommendations.
+         */
+        const storageKey =
+          getRecommendationStorageKey();
+
+        if (storageKey) {
+          const stored =
+            localStorage.getItem(
+              storageKey
+            );
+
+          if (stored) {
+            try {
+              const parsed =
+                JSON.parse(stored);
+
+              if (
+                Array.isArray(
+                  parsed.recommendations
+                )
+              ) {
+                parsed.recommendations =
+                  parsed.recommendations.filter(
+                    (item) =>
+                      !(
+                        item?.job?.source ===
+                          job.source &&
+                        String(
+                          item?.job
+                            ?.externalId
+                        ) ===
+                          String(
+                            job.externalId
+                          )
+                      )
+                  );
+
+                localStorage.setItem(
+                  storageKey,
+                  JSON.stringify(parsed)
+                );
+              }
+            } catch (error) {
+              console.error(
+                "Failed to update cached recommendations:",
+                error
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Failed to save recommendation feedback:",
+          error
+        );
+      }
+    };
 
   // ==================== DASHBOARD COUNTS ====================
 
@@ -528,13 +762,15 @@ function Dashboard() {
   const offerCount =
     applications.filter(
       (application) =>
-        application.status === "Offer"
+        application.status ===
+        "Offer"
     ).length;
 
   const appliedCount =
     applications.filter(
       (application) =>
-        application.status === "Applied"
+        application.status ===
+        "Applied"
     ).length;
 
   const statusGroups = [
@@ -579,7 +815,9 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <LoadingScreen message="Loading your dashboard..." />
+      <LoadingScreen
+        message="Loading your dashboard..."
+      />
     );
   }
 
@@ -646,8 +884,8 @@ function Dashboard() {
             </strong>
 
             <small>
-              Applications you're
-              tracking
+              Jobs you're actively
+              pursuing
             </small>
           </div>
 
@@ -661,8 +899,7 @@ function Dashboard() {
             </strong>
 
             <small>
-              Interviews in your
-              pipeline
+              Conversations in progress
             </small>
           </div>
 
@@ -676,30 +913,28 @@ function Dashboard() {
             </strong>
 
             <small>
-              Offers received
+              Opportunities moving forward
             </small>
           </div>
         </section>
 
-        {/* ==================== MAIN GRID ==================== */}
+        {/* ==================== APPLICATION OVERVIEW ==================== */}
 
-        <section className="dashboard-main-grid">
-          {/* APPLICATION PIPELINE */}
-
+        <section className="dashboard-grid">
           <div className="dashboard-card">
             <div className="dashboard-section-heading">
               <div>
                 <p className="section-label">
-                  APPLICATION PIPELINE
+                  APPLICATION OVERVIEW
                 </p>
 
                 <h2>
-                  Where things stand
+                  Your progress
                 </h2>
               </div>
 
               <Link to="/applications">
-                View applications
+                View all
               </Link>
             </div>
 
@@ -708,7 +943,7 @@ function Dashboard() {
                 (group) => {
                   const percentage =
                     applicationCount >
-                      0
+                    0
                       ? Math.min(
                           100,
                           (group.count /
@@ -753,7 +988,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* UPCOMING */}
+          {/* ==================== UPCOMING ==================== */}
 
           <div className="dashboard-card">
             <div className="dashboard-section-heading">
@@ -773,7 +1008,7 @@ function Dashboard() {
             </div>
 
             {upcomingApplications.length ===
-              0 ? (
+            0 ? (
               <div className="dashboard-empty">
                 <div className="empty-icon">
                   +
@@ -872,11 +1107,18 @@ function Dashboard() {
               !recommendationsLoading && (
                 <button
                   className="recommendations-refresh-button"
-                  onClick={handleGetRecommendations}
+                  onClick={
+                    handleGetRecommendations
+                  }
                   title="Refresh AI recommendations"
                 >
-                  <span className="refresh-icon">↻</span>
-                  <span>Refresh</span>
+                  <span className="refresh-icon">
+                    ↻
+                  </span>
+
+                  <span>
+                    Refresh
+                  </span>
                 </button>
               )}
           </div>
@@ -938,7 +1180,8 @@ function Dashboard() {
 
           {recommendationsError &&
             !recommendationsLoading &&
-            recommendedJobs.length === 0 && (
+            recommendedJobs.length ===
+              0 && (
               <div className="recommendations-message">
                 <h3>
                   Recommendations
@@ -1074,7 +1317,9 @@ function Dashboard() {
 
                           {job.salary && (
                             <span>
-                              {job.salary}
+                              {
+                                job.salary
+                              }
                             </span>
                           )}
                         </div>
@@ -1133,13 +1378,13 @@ function Dashboard() {
                           }
                         >
                           {trackingRecommendationId ===
-                            `${job.source}-${job.externalId}`
+                          `${job.source}-${job.externalId}`
                             ? "Updating..."
                             : trackedRecommendationIds.has(
                                 `${job.source}-${job.externalId}`
                               )
-                              ? "Application Tracked"
-                              : "Track Application"}
+                            ? "Application Tracked"
+                            : "Track Application"}
                         </button>
 
                         <button
