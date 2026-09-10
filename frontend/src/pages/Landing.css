@@ -1,0 +1,444 @@
+/* =========================================================
+   CAREERLY LANDING PAGE
+   ========================================================= */
+
+.landing-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  background: #f4f0e9;
+  color: #302d29;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.landing-header {
+  width: 100%;
+  max-width: 1180px;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin: 0 auto;
+  padding: 28px 32px;
+}
+
+.landing-brand {
+  color: #302d29;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.7px;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.landing-login-link {
+  color: #625b54;
+  text-decoration: none;
+
+  font-size: 14px;
+  font-weight: 650;
+
+  transition: color 0.2s ease;
+}
+
+.landing-login-link:hover {
+  color: #9b584c;
+}
+
+.landing-signup-button {
+  padding: 10px 17px;
+
+  border-radius: 7px;
+
+  background: #302d29;
+  color: #fffaf6;
+
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-signup-button:hover {
+  background: #1f1d1b;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.landing-main {
+  width: 100%;
+  max-width: 1180px;
+  box-sizing: border-box;
+
+  flex: 1;
+
+  margin: 0 auto;
+  padding: 75px 32px 55px;
+}
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.landing-hero {
+  max-width: 780px;
+}
+
+.landing-eyebrow {
+  margin-bottom: 20px;
+
+  color: #a65f52;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.landing-hero h1 {
+  margin: 0;
+
+  color: #302d29;
+
+  font-size: clamp(48px, 7vw, 82px);
+  line-height: 0.98;
+  letter-spacing: -4px;
+  font-weight: 800;
+}
+
+.landing-hero h1 span {
+  color: #a65f52;
+}
+
+.landing-description {
+  max-width: 590px;
+
+  margin: 28px 0 0;
+
+  color: #756e66;
+
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.landing-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  margin-top: 32px;
+}
+
+.landing-primary-button,
+.landing-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 46px;
+  box-sizing: border-box;
+
+  padding: 0 18px;
+
+  border-radius: 7px;
+
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.landing-primary-button {
+  background: #a65f52;
+  color: #fffaf6;
+  border: 1px solid #a65f52;
+}
+
+.landing-primary-button:hover {
+  background: #8f5046;
+  border-color: #8f5046;
+  transform: translateY(-1px);
+}
+
+.landing-secondary-button {
+  background: transparent;
+  color: #625b54;
+  border: 1px solid #d0c7bc;
+}
+
+.landing-secondary-button:hover {
+  background: #eee9e2;
+  border-color: #bdb2a6;
+  color: #302d29;
+}
+
+/* =========================================================
+   FEATURES
+   ========================================================= */
+
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+
+  margin-top: 100px;
+
+  border-top: 1px solid #d8d0c6;
+}
+
+.landing-feature {
+  display: flex;
+  gap: 18px;
+
+  min-height: 150px;
+  box-sizing: border-box;
+
+  padding: 27px 28px 20px 0;
+}
+
+.landing-feature + .landing-feature {
+  padding-left: 28px;
+  border-left: 1px solid #d8d0c6;
+}
+
+.landing-feature-number {
+  flex-shrink: 0;
+
+  color: #a65f52;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.landing-feature h2 {
+  margin: 0 0 8px;
+
+  color: #302d29;
+
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.landing-feature p {
+  max-width: 250px;
+
+  margin: 0;
+
+  color: #80786f;
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.landing-footer {
+  width: 100%;
+  max-width: 1180px;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin: 0 auto;
+  padding: 22px 32px;
+
+  border-top: 1px solid #ddd6cc;
+}
+
+.landing-footer span {
+  color: #a65f52;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.landing-footer p {
+  margin: 0;
+
+  color: #8a8178;
+
+  font-size: 11px;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+body.dark-theme .landing-page {
+  background: #1d1b19;
+  color: #eee8e0;
+}
+
+body.dark-theme .landing-brand,
+body.dark-theme .landing-hero h1,
+body.dark-theme .landing-feature h2 {
+  color: #f1ece5;
+}
+
+body.dark-theme .landing-eyebrow,
+body.dark-theme .landing-hero h1 span,
+body.dark-theme .landing-feature-number,
+body.dark-theme .landing-footer span {
+  color: #c98272;
+}
+
+body.dark-theme .landing-description {
+  color: #aaa199;
+}
+
+body.dark-theme .landing-login-link {
+  color: #b8afa6;
+}
+
+body.dark-theme .landing-login-link:hover {
+  color: #d08a7b;
+}
+
+body.dark-theme .landing-signup-button {
+  background: #eee7df;
+  color: #252320;
+}
+
+body.dark-theme .landing-signup-button:hover {
+  background: #fffaf4;
+}
+
+body.dark-theme .landing-primary-button {
+  background: #a65f52;
+  border-color: #a65f52;
+  color: #fffaf6;
+}
+
+body.dark-theme .landing-primary-button:hover {
+  background: #b56c5e;
+  border-color: #b56c5e;
+}
+
+body.dark-theme .landing-secondary-button {
+  border-color: #514840;
+  color: #bcb3aa;
+}
+
+body.dark-theme .landing-secondary-button:hover {
+  background: #302c28;
+  border-color: #66584f;
+  color: #f1ece5;
+}
+
+body.dark-theme .landing-features,
+body.dark-theme .landing-feature + .landing-feature,
+body.dark-theme .landing-footer {
+  border-color: #3a3530;
+}
+
+body.dark-theme .landing-feature p,
+body.dark-theme .landing-footer p {
+  color: #948b82;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .landing-header {
+    padding: 22px 20px;
+  }
+
+  .landing-main {
+    padding: 55px 20px 40px;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(45px, 13vw, 65px);
+    letter-spacing: -3px;
+  }
+
+  .landing-description {
+    font-size: 15px;
+  }
+
+  .landing-features {
+    grid-template-columns: 1fr;
+    margin-top: 70px;
+  }
+
+  .landing-feature {
+    min-height: auto;
+    padding: 22px 0;
+    border-bottom: 1px solid #d8d0c6;
+  }
+
+  .landing-feature + .landing-feature {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  body.dark-theme .landing-feature {
+    border-color: #3a3530;
+  }
+
+  .landing-footer {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-nav {
+    gap: 12px;
+  }
+
+  .landing-login-link {
+    font-size: 13px;
+  }
+
+  .landing-signup-button {
+    padding: 9px 13px;
+  }
+
+  .landing-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .landing-primary-button,
+  .landing-secondary-button {
+    width: 100%;
+  }
+
+  .landing-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}

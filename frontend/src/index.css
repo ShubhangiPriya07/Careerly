@@ -1,0 +1,638 @@
+/* =========================
+   GLOBAL THEME
+========================= */
+
+:root {
+  --bg: #f5f7fa;
+  --surface: #ffffff;
+  --surface-soft: #f7f9fb;
+  --border: #e1e7ee;
+
+  --text: #17212b;
+  --text-secondary: #52616f;
+  --text-muted: #74808c;
+
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+
+  --dark-card: #17212b;
+  --dark-card-soft: #263442;
+
+  --danger-bg: #feeceb;
+  --danger-border: #f5cccc;
+  --danger-text: #a33d3d;
+
+  --shadow: 0 5px 18px rgba(35, 50, 65, 0.05);
+}
+
+/* =========================
+   GLOBAL RESET
+========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+/* =========================
+   DARK THEME
+========================= */
+
+body.dark-theme {
+  --bg: #101820;
+  --surface: #19242e;
+  --surface-soft: #152029;
+  --border: #2a3946;
+
+  --text: #edf3f8;
+  --text-secondary: #b4c1cc;
+  --text-muted: #8f9daa;
+
+  --primary: #5b96f5;
+  --primary-hover: #76a9f7;
+
+  --dark-card: #111b24;
+  --dark-card-soft: #22313d;
+
+  --danger-bg: #302022;
+  --danger-border: #5a3437;
+  --danger-text: #f0a7a7;
+
+  --shadow: 0 5px 18px rgba(0, 0, 0, 0.18);
+
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* =========================
+   APPLICATIONS
+========================= */
+
+body.dark-theme .applications-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.dark-theme .applications-header h1,
+body.dark-theme .application-stat-card p,
+body.dark-theme .application-card-title h2,
+body.dark-theme .application-detail h3 {
+  color: var(--text);
+}
+
+body.dark-theme .applications-header p,
+body.dark-theme .application-stat-card h3,
+body.dark-theme .application-card-title p,
+body.dark-theme .application-applied-date,
+body.dark-theme .application-status label {
+  color: var(--text-muted);
+}
+
+body.dark-theme .application-stat-card,
+body.dark-theme .application-card,
+body.dark-theme .applications-empty {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+body.dark-theme .application-filter-button {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+body.dark-theme .application-filter-button:hover {
+  background: var(--dark-card-soft);
+  border-color: #3a4c5b;
+}
+
+body.dark-theme .application-filter-button.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+body.dark-theme .application-status select,
+body.dark-theme .application-detail textarea,
+body.dark-theme .application-detail input {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.dark-theme .application-detail textarea:focus,
+body.dark-theme .application-detail input:focus {
+  background: var(--surface);
+}
+
+body.dark-theme .application-card-actions {
+  border-color: var(--border);
+}
+
+body.dark-theme .application-view-button {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--primary);
+}
+
+body.dark-theme .application-view-button:hover {
+  background: var(--dark-card-soft);
+}
+
+body.dark-theme .application-delete-button {
+  background: transparent;
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+body.dark-theme .application-delete-button:hover {
+  background: var(--danger-bg);
+}
+
+body.dark-theme .applications-error {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+body.dark-theme .application-rate-card {
+  background: var(--dark-card);
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
+body.dark-theme .dashboard-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.dark-theme .dashboard-header h1,
+body.dark-theme .dashboard-section-heading h2,
+body.dark-theme .dashboard-stat-card strong,
+body.dark-theme .dashboard-empty h3 {
+  color: var(--text);
+}
+
+body.dark-theme .dashboard-subtitle,
+body.dark-theme .dashboard-stat-card span,
+body.dark-theme .progress-row-header span,
+body.dark-theme .dashboard-loading {
+  color: var(--text-muted);
+}
+
+body.dark-theme .dashboard-stat-card,
+body.dark-theme .dashboard-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+body.dark-theme .progress-row-header strong {
+  color: var(--text-secondary);
+}
+
+body.dark-theme .progress-bar {
+  background: #263642;
+}
+
+body.dark-theme .upcoming-item {
+  border-color: var(--border);
+}
+
+body.dark-theme .upcoming-date {
+  background: var(--dark-card-soft);
+  color: var(--text);
+}
+
+body.dark-theme .upcoming-details h3 {
+  color: var(--text);
+}
+
+body.dark-theme .upcoming-details p {
+  color: var(--text-secondary);
+}
+
+body.dark-theme .upcoming-details span {
+  color: var(--text-muted);
+}
+
+body.dark-theme .empty-icon {
+  background: var(--dark-card-soft);
+  color: var(--primary);
+}
+
+body.dark-theme .dashboard-empty p {
+  color: var(--text-muted);
+}
+
+body.dark-theme .quick-actions {
+  background: var(--dark-card);
+}
+
+body.dark-theme .quick-action-links a {
+  background: var(--dark-card-soft);
+  border-color: #344653;
+}
+
+body.dark-theme .quick-action-links a:hover {
+  background: #2d404d;
+}
+
+/* =========================
+   DASHBOARD HAMBURGER
+========================= */
+
+body.dark-theme .dashboard-menu-button {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+body.dark-theme .dashboard-menu-button span {
+  background: var(--text);
+}
+
+body.dark-theme .dashboard-menu-button:hover {
+  background: var(--dark-card-soft);
+}
+
+body.dark-theme .dashboard-menu-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Sidebar intentionally stays dark */
+body.dark-theme .dashboard-sidebar {
+  background: #111b24;
+}
+
+body.dark-theme .dashboard-close-button {
+  background: #22313d;
+  color: #cbd5df;
+}
+
+body.dark-theme .dashboard-close-button:hover {
+  background: #2d404d;
+}
+
+body.dark-theme .dashboard-nav-link {
+  color: #cbd5df;
+}
+
+body.dark-theme .dashboard-nav-link:hover {
+  background: #22313d;
+}
+
+body.dark-theme .dashboard-nav-link.active {
+  background: var(--primary);
+}
+
+/* =========================
+   JOB DETAILS
+========================= */
+
+body.dark-theme .job-details-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.dark-theme .job-back-link {
+  color: var(--primary);
+}
+
+body.dark-theme .job-header-card {
+  background: #162331;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+body.dark-theme .job-label {
+  color: #8fb7ff;
+}
+
+body.dark-theme .job-header-card h1 {
+  color: #f3f7fa;
+}
+
+body.dark-theme .job-header-card h2 {
+  color: #c9d5df;
+}
+
+body.dark-theme .job-location {
+  color: #aab8c4;
+}
+
+body.dark-theme .track-job-button {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border) !important;
+}
+
+body.dark-theme .track-job-button:hover {
+  background: var(--dark-card-soft);
+}
+
+body.dark-theme .track-job-button.tracked {
+  background: #20364b;
+  color: #8fb7ff;
+  border-color: #355878 !important;
+}
+
+body.dark-theme .save-job-button.saved {
+  background: #20364b;
+  color: #8fb7ff;
+}
+
+body.dark-theme .job-info-card,
+body.dark-theme .job-description-card,
+body.dark-theme .job-error-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+body.dark-theme .job-info-card span {
+  color: var(--text-muted);
+}
+
+body.dark-theme .job-info-card strong {
+  color: var(--text);
+}
+
+body.dark-theme .section-heading h2 {
+  color: var(--text);
+}
+
+body.dark-theme .section-heading span {
+  background: var(--border);
+}
+
+body.dark-theme .job-description {
+  color: var(--text-secondary);
+}
+
+body.dark-theme .no-description {
+  color: var(--text-muted);
+}
+
+body.dark-theme .apply-card {
+  background: #1d3040;
+  border-color: #30485c;
+}
+
+body.dark-theme .apply-card h2 {
+  color: var(--text);
+}
+
+body.dark-theme .apply-card p {
+  color: var(--text-muted);
+}
+
+body.dark-theme .job-error-message {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+body.dark-theme .job-error-card h2 {
+  color: var(--text);
+}
+
+body.dark-theme .job-error-card p {
+  color: var(--text-muted);
+}
+
+/* =========================
+   SAVED JOBS
+========================= */
+
+body.dark-theme .saved-jobs-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.dark-theme .saved-jobs-header h1 {
+  color: var(--text);
+}
+
+body.dark-theme .saved-jobs-subtitle {
+  color: var(--text-muted);
+}
+
+body.dark-theme .saved-jobs-eyebrow {
+  color: var(--primary);
+}
+
+body.dark-theme .saved-jobs-count {
+  background: var(--dark-card);
+}
+
+body.dark-theme .saved-job-card,
+body.dark-theme .saved-jobs-empty {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+body.dark-theme .saved-job-card:hover {
+  border-color: #3a4c5b;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+body.dark-theme .company-placeholder {
+  background: #20364a;
+  color: #8fb7ff;
+}
+
+body.dark-theme .saved-label {
+  background: #20364a;
+  color: #8fb7ff;
+}
+
+body.dark-theme .saved-job-card h2 {
+  color: var(--text);
+}
+
+body.dark-theme .saved-job-company {
+  color: var(--text-secondary);
+}
+
+body.dark-theme .saved-job-location {
+  color: var(--text-muted);
+}
+
+body.dark-theme .saved-job-tags span {
+  background: var(--dark-card-soft);
+  color: var(--text-secondary);
+}
+
+body.dark-theme .view-job-button {
+  background: var(--dark-card);
+}
+
+body.dark-theme .view-job-button:hover {
+  background: #0d151c;
+}
+
+body.dark-theme .remove-job-button {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+body.dark-theme .remove-job-button:hover {
+  background: var(--dark-card-soft);
+  color: var(--text);
+}
+
+body.dark-theme .saved-jobs-error {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+body.dark-theme .saved-jobs-empty h2 {
+  color: var(--text);
+}
+
+body.dark-theme .saved-jobs-empty p,
+body.dark-theme .saved-jobs-loading {
+  color: var(--text-muted);
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+body.dark-theme .profile-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.dark-theme .profile-heading h1,
+body.dark-theme .profile-card-header h2,
+body.dark-theme .profile-section-title h2,
+body.dark-theme .security-card h2 {
+  color: var(--text);
+}
+
+body.dark-theme .profile-heading p,
+body.dark-theme .profile-card-header p,
+body.dark-theme .profile-section-title p,
+body.dark-theme .security-card p {
+  color: var(--text-muted);
+}
+
+body.dark-theme .profile-card,
+body.dark-theme .profile-error-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+body.dark-theme .profile-divider,
+body.dark-theme .preference-row {
+  border-color: var(--border);
+}
+
+body.dark-theme .profile-value {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.dark-theme .profile-value-row > span {
+  color: var(--text);
+}
+
+body.dark-theme .profile-edit-row input {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+body.dark-theme .profile-edit-button,
+body.dark-theme .profile-secondary-button,
+body.dark-theme .logout-button {
+  background: var(--dark-card-soft);
+  color: var(--text-secondary);
+}
+
+body.dark-theme .profile-edit-button:hover,
+body.dark-theme .profile-secondary-button:hover,
+body.dark-theme .logout-button:hover {
+  background: #304553;
+}
+
+body.dark-theme .preference-row strong {
+  color: var(--text);
+}
+
+body.dark-theme .preference-row span {
+  color: var(--text-muted);
+}
+
+body.dark-theme .profile-error-card h2 {
+  color: var(--text);
+}
+
+body.dark-theme .profile-error-card p {
+  color: var(--text-muted);
+}
+
+/* =========================
+   GLOBAL TRANSITIONS
+========================= */
+
+body,
+.dashboard-page,
+.applications-page,
+.job-details-page,
+.saved-jobs-page,
+.profile-page,
+.dashboard-card,
+.dashboard-stat-card,
+.application-card,
+.application-stat-card,
+.job-info-card,
+.job-description-card,
+.saved-job-card,
+.profile-card {
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* =========================
+   AUTH PAGES ALWAYS LIGHT
+========================= */
+
+.auth-page {
+  background: #f4f0e9 !important;
+  color: #302d29 !important;
+}
+
+.auth-page .auth-form-panel {
+  background: #fbf9f5 !important;
+}
+
+.auth-page .auth-brand-panel {
+  background: #302d29 !important;
+  color: #f4f0e9 !important;
+}
