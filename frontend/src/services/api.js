@@ -2,7 +2,7 @@ import axios from "axios";
 import { auth } from "../config/firebase";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://careerly-production-e0c4.up.railway.app/api",
 });
 
 // ==================== AUTH TOKEN CACHE ====================
