@@ -26,7 +26,7 @@ connectDB();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
   })
 );
 
@@ -79,6 +79,6 @@ app.get(
 
 app.listen(PORT, () => {
   console.log(
-    `Careerly backend running on http://localhost:${PORT}`
+    `Careerly backend running on port ${PORT}`
   );
 });
