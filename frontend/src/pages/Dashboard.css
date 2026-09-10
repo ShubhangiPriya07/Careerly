@@ -1359,3 +1359,53 @@ body.dark-theme .recommended-job-not-interested-button:hover {
   background: #342d29 !important;
   color: #d2c9c1 !important;
 }
+
+/* =========================
+   FIND JOBS BUTTON
+========================= */
+
+.dashboard-page .dashboard-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 18px;
+  min-height: 40px;
+  box-sizing: border-box;
+
+  background: #a65f52 !important;
+  border: 1px solid #99584c !important;
+  border-radius: 6px;
+
+  color: #fffaf6 !important;
+  text-decoration: none !important;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.dashboard-page .dashboard-primary-button:hover {
+  background: #955348 !important;
+  border-color: #955348 !important;
+  color: #fffaf6 !important;
+  text-decoration: none !important;
+
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(112, 65, 56, 0.15);
+}
+
+.dashboard-page .dashboard-primary-button:visited,
+.dashboard-page .dashboard-primary-button:active,
+.dashboard-page .dashboard-primary-button:focus {
+  color: #fffaf6 !important;
+  text-decoration: none !important;
+}
