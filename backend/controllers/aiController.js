@@ -13,6 +13,12 @@ const RecommendationFeedback = require(
     "../models/RecommendationFeedback"
 );
 
+/*
+ * ============================
+ * TEST AI
+ * ============================
+ */
+
 const testAI = async (req, res) => {
     try {
         const response = await generateAIResponse(
@@ -33,6 +39,12 @@ const testAI = async (req, res) => {
         });
     }
 };
+
+/*
+ * ============================
+ * MATCH JOB
+ * ============================
+ */
 
 const matchJob = async (req, res) => {
     try {
@@ -121,8 +133,20 @@ Rules:
     }
 };
 
+/*
+ * ============================
+ * RECOMMEND JOBS
+ * ============================
+ */
+
 const recommendJobs = async (req, res) => {
     try {
+        /*
+         * ============================
+         * FIND USER
+         * ============================
+         */
+
         const user = await User.findOne({
             firebaseUid: req.firebaseUser.uid,
         });
@@ -130,9 +154,15 @@ const recommendJobs = async (req, res) => {
         if (!user) {
             return res.status(404).json({
                 success: false,
-                message: "Careerly user profile not found",
+                message: "Careerly user profile not found.",
             });
         }
+
+        /*
+         * ============================
+         * FIND DEFAULT RESUME
+         * ============================
+         */
 
         const resume = await Resume.findOne({
             userId: user._id,
@@ -144,7 +174,7 @@ const recommendJobs = async (req, res) => {
         if (!resume) {
             return res.status(404).json({
                 success: false,
-                message: "No default resume found",
+                message: "No default resume found.",
             });
         }
 
@@ -164,7 +194,7 @@ const recommendJobs = async (req, res) => {
 
         /*
          * ============================
-         * USER JOB PREFERENCES
+         * USER PREFERENCES
          * ============================
          */
 
@@ -172,25 +202,25 @@ const recommendJobs = async (req, res) => {
 
         const preferredWorkType =
             Array.isArray(preferences.employmentTypes) &&
-                preferences.employmentTypes.length > 0
+            preferences.employmentTypes.length > 0
                 ? preferences.employmentTypes[0]
                 : "";
 
         const preferredWorkMode =
             Array.isArray(preferences.workModes) &&
-                preferences.workModes.length > 0
+            preferences.workModes.length > 0
                 ? preferences.workModes[0]
                 : "";
 
         const preferredLocation =
             Array.isArray(preferences.locations) &&
-                preferences.locations.length > 0
+            preferences.locations.length > 0
                 ? preferences.locations[0].trim()
                 : "";
 
         const preferredExperienceLevel =
             preferences.experienceLevel &&
-                preferences.experienceLevel !== "Any"
+            preferences.experienceLevel !== "Any"
                 ? preferences.experienceLevel
                 : "";
 
@@ -204,9 +234,7 @@ const recommendJobs = async (req, res) => {
             await RecommendationFeedback.find({
                 userId: user._id,
                 feedback: "not_interested",
-            }).select(
-                "source externalId"
-            );
+            }).select("source externalId");
 
         const rejectedJobKeys = new Set(
             feedbackRecords.map(
@@ -219,7 +247,7 @@ const recommendJobs = async (req, res) => {
 
         /*
          * ============================
-         * BUILD RESUME-BASED QUERIES
+         * NORMALIZE RESUME SKILLS
          * ============================
          */
 
@@ -231,11 +259,19 @@ const recommendJobs = async (req, res) => {
             )
             .map((skill) => skill.trim());
 
+        /*
+         * ============================
+         * BUILD SEARCH QUERIES
+         * ============================
+         */
+
         const queries = [];
 
         /*
-         * User-selected roles get the highest priority.
+         * Explicitly selected roles get
+         * the highest priority.
          */
+
         if (
             Array.isArray(preferences.roles) &&
             preferences.roles.length > 0
@@ -253,23 +289,31 @@ const recommendJobs = async (req, res) => {
         }
 
         /*
-         * Build role searches from the candidate's
-         * actual resume skills.
+         * Detect technologies from resume.
          */
+
         const skillText = normalizedSkills
             .join(" ")
             .toLowerCase();
 
-        const hasReact = skillText.includes("react");
-        const hasAngular = skillText.includes("angular");
-        const hasVue = skillText.includes("vue");
+        const hasReact =
+            skillText.includes("react");
+
+        const hasAngular =
+            skillText.includes("angular");
+
+        const hasVue =
+            skillText.includes("vue");
 
         const hasJavaScript =
             skillText.includes("javascript") ||
             skillText.includes("typescript");
 
-        const hasPython = skillText.includes("python");
-        const hasJava = skillText.includes("java");
+        const hasPython =
+            skillText.includes("python");
+
+        const hasJava =
+            skillText.includes("java");
 
         const hasCSharp =
             skillText.includes("c#") ||
@@ -292,9 +336,6 @@ const recommendJobs = async (req, res) => {
             skillText.includes("postgres") ||
             skillText.includes("postgresql");
 
-        const hasMongoDB =
-            skillText.includes("mongodb");
-
         const hasFrontend =
             hasReact ||
             hasAngular ||
@@ -314,6 +355,10 @@ const recommendJobs = async (req, res) => {
 
         const hasFullStack =
             hasFrontend && hasBackend;
+
+        /*
+         * Add role searches.
+         */
 
         if (hasReact) {
             queries.push("React Developer");
@@ -376,13 +421,21 @@ const recommendJobs = async (req, res) => {
             );
         }
 
+        /*
+         * Remove duplicate queries.
+         *
+         * IMPORTANT:
+         * We now intentionally limit the number
+         * of Adzuna requests.
+         */
+
         const uniqueQueries = [
             ...new Set(
                 queries.map((query) => query.trim())
             ),
         ]
             .filter(Boolean)
-            .slice(0, 5);
+            .slice(0, 3);
 
         /*
          * ============================
@@ -424,48 +477,103 @@ const recommendJobs = async (req, res) => {
 
         /*
          * ============================
-         * SEARCH REAL JOBS
+         * SEARCH ADZUNA
+         * ============================
+         *
+         * IMPORTANT:
+         * Do NOT use Promise.all here.
+         *
+         * Requests are made one at a time so we
+         * don't hit Adzuna with several requests
+         * simultaneously.
+         */
+
+        const combinedJobs = [];
+
+        let adzunaRateLimited = false;
+
+        for (const query of uniqueQueries) {
+            try {
+                const result =
+                    await searchAdzunaJobs({
+                        query,
+                        location: preferredLocation,
+                        jobType: adzunaJobType,
+                        workMode: adzunaWorkMode,
+                        sortBy: "relevance",
+                        page: 1,
+                        resultsPerPage: 10,
+                    });
+
+                if (
+                    result &&
+                    Array.isArray(result.results)
+                ) {
+                    combinedJobs.push(
+                        ...result.results
+                    );
+                }
+
+                /*
+                 * Small delay between requests.
+                 *
+                 * This prevents Careerly from firing
+                 * several Adzuna requests back-to-back.
+                 */
+
+                await new Promise((resolve) =>
+                    setTimeout(resolve, 500)
+                );
+            } catch (error) {
+                const status =
+                    error.response?.status;
+
+                console.error(
+                    `Adzuna recommendation search failed for "${query}":`,
+                    error.message
+                );
+
+                /*
+                 * 429 = rate limited.
+                 *
+                 * Stop making additional requests
+                 * instead of making the problem worse.
+                 */
+
+                if (status === 429) {
+                    adzunaRateLimited = true;
+
+                    console.error(
+                        "Adzuna rate limit reached. Stopping recommendation searches."
+                    );
+
+                    break;
+                }
+
+                /*
+                 * Other search failures should not
+                 * destroy the whole recommendation
+                 * request.
+                 */
+
+                continue;
+            }
+        }
+
+        /*
+         * ============================
+         * REMOVE DUPLICATES
          * ============================
          */
 
-        const jobResults = await Promise.all(
-            uniqueQueries.map(async (query) => {
-                try {
-                    const result =
-                        await searchAdzunaJobs({
-                            query,
-                            location: preferredLocation,
-                            jobType: adzunaJobType,
-                            workMode: adzunaWorkMode,
-                            sortBy: "relevance",
-                            page: 1,
-                            resultsPerPage: 10,
-                        });
-
-                    return result.results || [];
-                } catch (error) {
-                    console.error(
-                        `Adzuna recommendation search failed for "${query}":`,
-                        error.message
-                    );
-
-                    return [];
-                }
-            })
-        );
-
-        const combinedJobs =
-            jobResults.flat();
-
-        /*
-         * Remove duplicate jobs AND jobs the
-         * candidate previously marked as
-         * Not Interested.
-         */
         const uniqueJobs = [];
         const seenIds = new Set();
 
         for (const job of combinedJobs) {
+            if (!job || job.id === undefined) {
+                continue;
+            }
+
             const id = String(job.id);
 
             const source =
@@ -486,23 +594,37 @@ const recommendJobs = async (req, res) => {
             uniqueJobs.push(job);
         }
 
+        /*
+         * ============================
+         * NO JOBS FOUND
+         * ============================
+         */
+
         if (uniqueJobs.length === 0) {
             return res.status(200).json({
                 success: true,
+
                 queries: uniqueQueries,
+
                 preferences: {
                     workType:
                         preferredWorkType || "Any",
+
                     workMode:
                         preferredWorkMode || "Any",
+
                     location:
                         preferredLocation || "",
+
                     experienceLevel:
                         preferredExperienceLevel || "Any",
                 },
+
                 recommendations: [],
-                message:
-                    rejectedJobKeys.size > 0
+
+                message: adzunaRateLimited
+                    ? "Job recommendations are temporarily unavailable because the job search service is rate-limited. Please try again shortly."
+                    : rejectedJobKeys.size > 0
                         ? "No new jobs matching your preferences were found."
                         : "No jobs matching your preferences were found.",
             });
@@ -510,7 +632,7 @@ const recommendJobs = async (req, res) => {
 
         /*
          * ============================
-         * NORMALIZE REAL JOBS
+         * NORMALIZE JOBS
          * ============================
          */
 
@@ -520,29 +642,45 @@ const recommendJobs = async (req, res) => {
             );
 
         /*
-         * Send a maximum of 35 real jobs to Gemini.
-         *
-         * postedAt is included so Gemini can
-         * consider freshness when ranking.
+         * Maximum of 35 jobs sent to Gemini.
          */
+
         const jobsForAI =
             normalizedJobs
                 .slice(0, 35)
                 .map((job, index) => ({
                     index,
+
                     externalId:
                         job.externalId,
-                    source: job.source,
-                    title: job.title,
-                    company: job.company,
-                    location: job.location,
+
+                    source:
+                        job.source,
+
+                    title:
+                        job.title,
+
+                    company:
+                        job.company,
+
+                    location:
+                        job.location,
+
                     description:
                         job.description,
-                    jobType: job.jobType,
-                    workMode: job.workMode,
-                    salary: job.salary,
+
+                    jobType:
+                        job.jobType,
+
+                    workMode:
+                        job.workMode,
+
+                    salary:
+                        job.salary,
+
                     experienceLevel:
                         job.experienceLevel,
+
                     postedAt:
                         job.postedAt
                             ? new Date(
@@ -566,7 +704,7 @@ const recommendJobs = async (req, res) => {
         const candidateIntent = {
             careerDirection:
                 Array.isArray(preferences.roles) &&
-                    preferences.roles.length > 0
+                preferences.roles.length > 0
                     ? preferences.roles
                         .filter(
                             (role) =>
@@ -853,9 +991,7 @@ not merely:
 
         try {
             rankingResult =
-                JSON.parse(
-                    rankingResponse
-                );
+                JSON.parse(rankingResponse);
         } catch (parseError) {
             console.error(
                 "Failed to parse Gemini recommendation response:",
@@ -880,12 +1016,6 @@ not merely:
          * ============================
          * VALIDATE AI RECOMMENDATIONS
          * ============================
-         *
-         * Gemini must return:
-         * - valid indexes
-         * - unique indexes
-         * - valid scores
-         * - non-empty reasons
          */
 
         const usedIndexes = new Set();
@@ -933,19 +1063,22 @@ not merely:
 
                     return {
                         job,
-                        matchScore: Math.min(
-                            100,
-                            Math.max(
-                                0,
-                                Number.isFinite(
-                                    matchScore
-                                )
-                                    ? Math.round(
+
+                        matchScore:
+                            Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    Number.isFinite(
                                         matchScore
                                     )
-                                    : 0
-                            )
-                        ),
+                                        ? Math.round(
+                                            matchScore
+                                        )
+                                        : 0
+                                )
+                            ),
+
                         reason,
                     };
                 })
@@ -953,44 +1086,61 @@ not merely:
                 .slice(0, 5);
 
         /*
-         * Safety check:
-         * recommendations must remain ordered by
-         * the score Gemini assigned.
+         * Keep highest match first.
          */
+
         recommendations.sort(
             (a, b) =>
                 b.matchScore -
                 a.matchScore
         );
 
-        res.status(200).json({
+        /*
+         * ============================
+         * RESPONSE
+         * ============================
+         */
+
+        return res.status(200).json({
             success: true,
+
             queries: uniqueQueries,
+
             preferences: {
                 workType:
                     preferredWorkType || "Any",
+
                 workMode:
                     preferredWorkMode || "Any",
+
                 location:
                     preferredLocation || "",
+
                 experienceLevel:
                     preferredExperienceLevel || "Any",
             },
+
             recommendations,
         });
     } catch (error) {
         console.error(
             "Job recommendation error:",
-            error.message
+            error
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message:
                 "Failed to generate job recommendations.",
         });
     }
 };
+
+/*
+ * ============================
+ * TAILOR RESUME
+ * ============================
+ */
 
 const tailorResume = async (req, res) => {
     try {
@@ -1028,37 +1178,57 @@ const tailorResume = async (req, res) => {
             });
         }
 
-        const parsedData = resume.parsedData || {};
+        const parsedData =
+            resume.parsedData || {};
 
         const resumeData = {
-            skills: Array.isArray(parsedData.skills)
-                ? parsedData.skills
-                : [],
+            skills:
+                Array.isArray(parsedData.skills)
+                    ? parsedData.skills
+                    : [],
 
-            experience: Array.isArray(parsedData.experience)
-                ? parsedData.experience
-                : [],
+            experience:
+                Array.isArray(parsedData.experience)
+                    ? parsedData.experience
+                    : [],
 
-            projects: Array.isArray(parsedData.projects)
-                ? parsedData.projects
-                : [],
+            projects:
+                Array.isArray(parsedData.projects)
+                    ? parsedData.projects
+                    : [],
 
-            education: Array.isArray(parsedData.education)
-                ? parsedData.education
-                : [],
+            education:
+                Array.isArray(parsedData.education)
+                    ? parsedData.education
+                    : [],
         };
 
         const jobData = {
-            title: job.title || "",
-            company: job.company || "",
-            location: job.location || "",
-            description: job.description || "",
-            jobType: job.jobType || "",
-            workMode: job.workMode || "",
-            experienceLevel: job.experienceLevel || "",
-            skills: Array.isArray(job.skills)
-                ? job.skills
-                : [],
+            title:
+                job.title || "",
+
+            company:
+                job.company || "",
+
+            location:
+                job.location || "",
+
+            description:
+                job.description || "",
+
+            jobType:
+                job.jobType || "",
+
+            workMode:
+                job.workMode || "",
+
+            experienceLevel:
+                job.experienceLevel || "",
+
+            skills:
+                Array.isArray(job.skills)
+                    ? job.skills
+                    : [],
         };
 
         const prompt = `
@@ -1203,9 +1373,6 @@ TAILORING PRIORITIES:
             });
         }
 
-        /*
-         * Basic response validation.
-         */
         if (
             typeof tailoredResume !== "object" ||
             tailoredResume === null
@@ -1264,15 +1431,22 @@ TAILORING PRIORITIES:
             tailoredResume.summary = "";
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
+
             message:
                 "Resume tailored successfully.",
+
             job: {
-                title: jobData.title,
-                company: jobData.company,
+                title:
+                    jobData.title,
+
+                company:
+                    jobData.company,
             },
-            resume: tailoredResume,
+
+            resume:
+                tailoredResume,
         });
     } catch (error) {
         console.error(
@@ -1280,7 +1454,7 @@ TAILORING PRIORITIES:
             error.message
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message:
                 "Failed to tailor resume.",
