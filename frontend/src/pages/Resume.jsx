@@ -40,6 +40,7 @@ function Resume() {
   const [education, setEducation] = useState([]);
   const [experience, setExperience] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [projectTechnologyInputs, setProjectTechnologyInputs] = useState({});
 
   useEffect(() => {
     loadResumes();
@@ -81,6 +82,7 @@ function Resume() {
     setEducation(parsed.education || []);
     setExperience(parsed.experience || []);
     setProjects(parsed.projects || []);
+    setProjectTechnologyInputs({});
 
     setIsEditing(false);
     setIsNewResume(false);
@@ -102,6 +104,7 @@ function Resume() {
     setEducation([]);
     setExperience([]);
     setProjects([]);
+    setProjectTechnologyInputs({});
 
     setIsNewResume(true);
     setIsEditing(true);
@@ -146,7 +149,7 @@ function Resume() {
 
       setError(
         error.response?.data?.message ||
-          "Failed to add resume."
+        "Failed to add resume."
       );
     } finally {
       setSaving(false);
@@ -175,6 +178,7 @@ function Resume() {
         setEducation([]);
         setExperience([]);
         setProjects([]);
+        setProjectTechnologyInputs({});
         setIsNewResume(false);
         setIsEditing(false);
       }
@@ -236,7 +240,7 @@ function Resume() {
 
       setError(
         error.response?.data?.message ||
-          "Failed to save resume."
+        "Failed to save resume."
       );
     } finally {
       setSaving(false);
@@ -385,7 +389,7 @@ function Resume() {
 
       setError(
         error.response?.data?.message ||
-          "Failed to upload resume."
+        "Failed to upload resume."
       );
     } finally {
       setUploading(false);
@@ -452,9 +456,9 @@ function Resume() {
       current.map((item, itemIndex) =>
         itemIndex === index
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item
       )
     );
@@ -490,9 +494,9 @@ function Resume() {
       current.map((item, itemIndex) =>
         itemIndex === index
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item
       )
     );
@@ -526,30 +530,36 @@ function Resume() {
       current.map((item, itemIndex) =>
         itemIndex === index
           ? {
-              ...item,
-              [field]: value,
-            }
+            ...item,
+            [field]: value,
+          }
           : item
       )
     );
   };
 
-  const updateProjectTechnologies = (
-    index,
-    value
-  ) => {
+  const updateProjectTechnologies = (index, value) => {
+    setProjectTechnologyInputs((current) => ({
+      ...current,
+      [index]: value,
+    }));
+  };
+
+  const saveProjectTechnologies = (index) => {
+    const value = projectTechnologyInputs[index] ?? "";
+
+    const technologies = value
+      .split(",")
+      .map((technology) => technology.trim())
+      .filter(Boolean);
+
     setProjects((current) =>
       current.map((item, itemIndex) =>
         itemIndex === index
           ? {
-              ...item,
-              technologies: value
-                .split(",")
-                .map((technology) =>
-                  technology.trim()
-                )
-                .filter(Boolean),
-            }
+            ...item,
+            technologies,
+          }
           : item
       )
     );
@@ -557,10 +567,24 @@ function Resume() {
 
   const removeProject = (index) => {
     setProjects((current) =>
-      current.filter(
-        (_, itemIndex) => itemIndex !== index
-      )
+      current.filter((_, itemIndex) => itemIndex !== index)
     );
+
+    setProjectTechnologyInputs((current) => {
+      const updated = {};
+
+      Object.entries(current).forEach(([key, value]) => {
+        const itemIndex = Number(key);
+
+        if (itemIndex < index) {
+          updated[itemIndex] = value;
+        } else if (itemIndex > index) {
+          updated[itemIndex - 1] = value;
+        }
+      });
+
+      return updated;
+    });
   };
 
   const formatDate = (date) => {
@@ -643,9 +667,8 @@ function Resume() {
       {/* SIDEBAR */}
 
       <aside
-        className={`resume-sidebar no-print ${
-          menuOpen ? "open" : ""
-        }`}
+        className={`resume-sidebar no-print ${menuOpen ? "open" : ""
+          }`}
       >
         <div className="resume-sidebar-header">
           <div>
@@ -803,7 +826,7 @@ function Resume() {
 
         {/* NO RESUMES */}
 
-        {resumes.length === 0 ? (
+        {resumes.length === 0 && !selectedResume ? (
           <section className="resume-empty-card no-print">
             <div className="resume-empty-icon">
               +
@@ -823,6 +846,7 @@ function Resume() {
 
             <div className="resume-empty-actions">
               <button
+                type="button"
                 className="resume-primary-button"
                 onClick={handleCreateResume}
               >
@@ -830,6 +854,7 @@ function Resume() {
               </button>
 
               <button
+                type="button"
                 className="resume-secondary-button"
                 onClick={handleUploadClick}
               >
@@ -916,23 +941,23 @@ function Resume() {
 
                           {(item.startDate ||
                             item.endDate) && (
-                            <span>
-                              {formatResumeDate(
-                                item.startDate
-                              )}
+                              <span>
+                                {formatResumeDate(
+                                  item.startDate
+                                )}
 
-                              {item.startDate ||
-                              item.endDate
-                                ? " – "
-                                : ""}
+                                {item.startDate ||
+                                  item.endDate
+                                  ? " – "
+                                  : ""}
 
-                              {item.endDate
-                                ? formatResumeDate(
+                                {item.endDate
+                                  ? formatResumeDate(
                                     item.endDate
                                   )
-                                : "Present"}
-                            </span>
-                          )}
+                                  : "Present"}
+                              </span>
+                            )}
                         </div>
 
                         {item.description && (
@@ -973,15 +998,15 @@ function Resume() {
 
                         {item.technologies?.length >
                           0 && (
-                          <div className="preview-project-tech">
-                            <strong>
-                              Technologies:
-                            </strong>{" "}
-                            {item.technologies.join(
-                              ", "
-                            )}
-                          </div>
-                        )}
+                            <div className="preview-project-tech">
+                              <strong>
+                                Technologies:
+                              </strong>{" "}
+                              {item.technologies.join(
+                                ", "
+                              )}
+                            </div>
+                          )}
                       </div>
                     )
                   )}
@@ -1018,23 +1043,23 @@ function Resume() {
 
                           {(item.startDate ||
                             item.endDate) && (
-                            <span>
-                              {formatResumeDate(
-                                item.startDate
-                              )}
+                              <span>
+                                {formatResumeDate(
+                                  item.startDate
+                                )}
 
-                              {item.startDate ||
-                              item.endDate
-                                ? " – "
-                                : ""}
+                                {item.startDate ||
+                                  item.endDate
+                                  ? " – "
+                                  : ""}
 
-                              {item.endDate
-                                ? formatResumeDate(
+                                {item.endDate
+                                  ? formatResumeDate(
                                     item.endDate
                                   )
-                                : "Present"}
-                            </span>
-                          )}
+                                  : "Present"}
+                              </span>
+                            )}
                         </div>
                       </div>
                     )
@@ -1072,12 +1097,11 @@ function Resume() {
                 {resumes.map((resume) => (
                   <button
                     key={resume._id}
-                    className={`resume-list-item ${
-                      selectedResume?._id ===
+                    className={`resume-list-item ${selectedResume?._id ===
                       resume._id
-                        ? "selected"
-                        : ""
-                    }`}
+                      ? "selected"
+                      : ""
+                      }`}
                     onClick={() =>
                       selectResume(resume)
                     }
@@ -1791,28 +1815,25 @@ function Resume() {
                               </label>
 
                               <input
-                                value={(
-                                  item.technologies ||
-                                  []
-                                ).join(", ")}
-                                onChange={(
-                                  event
-                                ) =>
+                                value={
+                                  projectTechnologyInputs[index] ??
+                                  (item.technologies || []).join(", ")
+                                }
+                                onChange={(event) =>
                                   updateProjectTechnologies(
                                     index,
-                                    event.target
-                                      .value
+                                    event.target.value
                                   )
                                 }
-                                disabled={
-                                  !isEditing
+                                onBlur={() =>
+                                  saveProjectTechnologies(index)
                                 }
+                                disabled={!isEditing}
                                 placeholder="React, Node.js, MongoDB"
                               />
 
                               <small>
-                                Separate technologies
-                                with commas.
+                                Separate technologies with commas.
                               </small>
                             </div>
                           </div>
