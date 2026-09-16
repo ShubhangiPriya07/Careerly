@@ -10,12 +10,19 @@ import {
 } from "firebase/auth";
 
 import { auth } from "../config/firebase";
+
 import {
   getCurrentUser,
   updateTheme,
 } from "../services/api";
 
 const ThemeContext = createContext(null);
+
+const PUBLIC_ROUTES = [
+  "/",
+  "/login",
+  "/signup",
+];
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState("light");
@@ -47,8 +54,6 @@ export function ThemeProvider({ children }) {
             error
           );
 
-          // If the user's theme cannot be loaded,
-          // safely fall back to light mode.
           setTheme("light");
         } finally {
           setLoading(false);
@@ -60,16 +65,71 @@ export function ThemeProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const currentPath = window.location.pathname;
+
+    const isPublicRoute =
+      PUBLIC_ROUTES.includes(currentPath);
+
     document.body.classList.remove(
       "light-theme",
       "dark-theme"
     );
 
+    // Landing, Login and Signup always stay
+    // in Careerly's original light design.
+    if (isPublicRoute) {
+      document.body.classList.add(
+        "light-theme"
+      );
+      return;
+    }
+
+    // All authenticated application pages
+    // respect the user's saved theme.
     document.body.classList.add(
       theme === "dark"
         ? "dark-theme"
         : "light-theme"
     );
+  }, [theme]);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      const currentPath =
+        window.location.pathname;
+
+      const isPublicRoute =
+        PUBLIC_ROUTES.includes(currentPath);
+
+      document.body.classList.remove(
+        "light-theme",
+        "dark-theme"
+      );
+
+      if (isPublicRoute) {
+        document.body.classList.add(
+          "light-theme"
+        );
+      } else {
+        document.body.classList.add(
+          theme === "dark"
+            ? "dark-theme"
+            : "light-theme"
+        );
+      }
+    };
+
+    window.addEventListener(
+      "popstate",
+      handleRouteChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "popstate",
+        handleRouteChange
+      );
+    };
   }, [theme]);
 
   const toggleTheme = async () => {
@@ -81,10 +141,8 @@ export function ThemeProvider({ children }) {
     const previousTheme = theme;
 
     try {
-      // Update the UI immediately.
       setTheme(newTheme);
 
-      // Save the selected theme to MongoDB.
       await updateTheme(newTheme);
     } catch (error) {
       console.error(
@@ -92,7 +150,6 @@ export function ThemeProvider({ children }) {
         error
       );
 
-      // Restore the previous theme if saving fails.
       setTheme(previousTheme);
     }
   };

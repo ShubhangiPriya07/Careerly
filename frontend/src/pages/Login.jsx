@@ -1,10 +1,28 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { signInWithPopup } from "firebase/auth";
+import {
+  useState,
+} from "react";
 
-import { loginUser } from "../services/auth";
-import { syncUser } from "../services/api";
-import { auth, googleProvider } from "../config/firebase";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  signInWithPopup,
+} from "firebase/auth";
+
+import {
+  loginUser,
+} from "../services/auth";
+
+import {
+  syncUser,
+} from "../services/api";
+
+import {
+  auth,
+  googleProvider,
+} from "../config/firebase";
 
 import "./Login.css";
 
@@ -30,7 +48,32 @@ function Login() {
 
       navigate("/dashboard");
     } catch (error) {
-      setError(error.message);
+      console.error("Login failed:", error);
+
+      if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/invalid-credential"
+      ) {
+        setError(
+          "Account not found. Please sign up first to create a Careerly account."
+        );
+      } else if (
+        error.code === "auth/wrong-password"
+      ) {
+        setError(
+          "Incorrect password. Please try again."
+        );
+      } else if (
+        error.code === "auth/invalid-email"
+      ) {
+        setError(
+          "Please enter a valid email address."
+        );
+      } else {
+        setError(
+          "Unable to log in. Please check your details and try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -41,24 +84,38 @@ function Login() {
     setGoogleLoading(true);
 
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(
+        auth,
+        googleProvider
+      );
+
       await syncUser();
 
       navigate("/dashboard");
     } catch (error) {
-      console.error("Google login failed:", error);
+      console.error(
+        "Google login failed:",
+        error
+      );
 
-      if (error.code === "auth/popup-closed-by-user") {
-        setError("Google sign-in was cancelled.");
+      if (
+        error.code ===
+        "auth/popup-closed-by-user"
+      ) {
+        setError(
+          "Google sign-in was cancelled."
+        );
       } else if (
-        error.code === "auth/account-exists-with-different-credential"
+        error.code ===
+        "auth/account-exists-with-different-credential"
       ) {
         setError(
           "An account already exists with this email using a different sign-in method."
         );
       } else {
         setError(
-          error.message || "Google sign-in failed. Please try again."
+          error.message ||
+            "Google sign-in failed. Please try again."
         );
       }
     } finally {
@@ -66,13 +123,17 @@ function Login() {
     }
   };
 
-  const isLoading = loading || googleLoading;
+  const isLoading =
+    loading || googleLoading;
 
   return (
     <div className="auth-page">
       <div className="auth-layout">
         <section className="auth-brand-panel">
-          <Link to="/" className="auth-brand">
+          <Link
+            to="/"
+            className="auth-brand"
+          >
             Careerly
           </Link>
 
@@ -88,8 +149,8 @@ function Login() {
             </h1>
 
             <p>
-              Pick up where you left off and keep moving
-              toward your next opportunity.
+              Pick up where you left off and keep
+              moving toward your next opportunity.
             </p>
           </div>
 
@@ -105,7 +166,10 @@ function Login() {
         <main className="auth-form-panel">
           <div className="auth-form-container">
             <div className="auth-mobile-brand">
-              <Link to="/" className="auth-brand">
+              <Link
+                to="/"
+                className="auth-brand"
+              >
                 Careerly
               </Link>
             </div>
@@ -177,6 +241,7 @@ function Login() {
                   : "Log In"}
               </button>
             </form>
+
             <div className="auth-divider">
               <span>OR</span>
             </div>
