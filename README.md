@@ -4,7 +4,8 @@ Careerly is a full-stack web application that helps students and job seekers dis
 
 **Live Application:** [Careerly](https://careerly-sigma.vercel.app/)  
 **Backend API:** [Careerly API](https://careerly-uzcu.onrender.com/)  
-**Source Code:** [GitHub Repository](https://github.com/ShubhangiPriya07/Careerly)
+**Source Code:** [GitHub Repository](https://github.com/ShubhangiPriya07/Careerly)  
+**Demo Video:** [Drive Link](https://drive.google.com/file/d/1Tfw2MTFmZmQx-IJUEZ5iGzFMqOFBBp__/view?usp=sharing)
 
 ---
 
